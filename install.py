@@ -13,7 +13,7 @@ class HoekWindLEDMatrixInstaller(ExtensionInstaller):
             version="0.1",
             name='hoekwindledmatrix',
             description='Display wind speed on an LED Matrix.',
-            report_services='user.hoekwind.HoekWindLEDMatrix',
+            report_services='user.hoekwindledmatrix.HoekWindLEDMatrix',
             config={'HoekWindLEDMatrix': {}},
             files=[('bin/user', ['bin/user/hoekwindledmatrix.py'])]
         )

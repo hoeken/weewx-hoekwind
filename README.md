@@ -4,17 +4,16 @@ Based in large part on the [WindGuru extension](https://github.com/claudobahn/we
 
 ## Installation
 1. Download the extension
-    > wget wget -O weewx-hoekwind-matrix.zip https://github.com/hoeken/weewx-hoekwind/archive/master.zip
+    > wget -O weewx-hoekwind-matrix.zip https://github.com/hoeken/weewx-hoekwind/archive/master.zip
 
 2. Run the extension installer:
 
-   > wee_extension --install weewx-hoekwind-matrix.zip
+   > sudo wee_extension --install weewx-hoekwind-matrix.zip
 
 3. Update weewx.conf:
 
     ```
-    [StdRESTful]
-        [[HoekWindLEDMatrix]]
+		[[HoekWindLEDMatrix]]
     ```
 
 4. Restart WeeWX

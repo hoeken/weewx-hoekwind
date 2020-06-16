@@ -72,5 +72,6 @@ class HoekWindLEDMatrix(weewx.engine.StdPrint):
 	# Override the default new_loop_packet member function:
 	def new_loop_packet(self, event):
 		packet = event.packet
-		print "LOOP: ", timestamp_to_string(packet['dateTime']),
-			"HoekWind=",  packet.get('windSpeed', 'N/A')
+		windSpeed = packet.get('windSpeed', 'N/A')
+		outputString = f"HoekWind={windSpeed}"
+		print(outputString)
