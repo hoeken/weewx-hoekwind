@@ -1,28 +1,23 @@
-WeeWX WindGuru - WeeWX extension that publishes data to WindGuru
+WeeWX Hoeken's LED Matrix - WeeWX extension that displays data on an LED matrix
 =
-Based in large part on the [WindFinder extension](https://github.com/weewx/weewx/wiki/windfinder) written by Matthew Wall.
+Based in large part on the [WindGuru extension](https://github.com/claudobahn/weewx-windguru) written by Claud Obahn.
 
 ## Installation
-1. Register your WindGuru station
-    https://stations.windguru.cz/register.php
+1. Download the extension
+    > wget wget -O weewx-hoekwind-matrix.zip https://github.com/hoeken/weewx-hoekwind/archive/master.zip
 
-2. Download the extension
-    > wget wget -O weewx-windguru.zip https://github.com/claudobahn/weewx-windguru/archive/master.zip
+2. Run the extension installer:
 
-3. Run the extension installer:
+   > wee_extension --install weewx-hoekwind-matrix.zip
 
-   > wee_extension --install weewx-windguru.zip
-
-4. Update weewx.conf:
+3. Update weewx.conf:
 
     ```
     [StdRESTful]
-        [[WindGuru]]
-            station_id = WindGuru_Station_id
-            password = WindGuru_Password
+        [[HoekWindLEDMatrix]]
     ```
 
-5. Restart WeeWX
+4. Restart WeeWX
 
     > sudo /etc/init.d/weewx stop
 

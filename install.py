@@ -1,23 +1,20 @@
-# Installer for WindGuru WeeWX extension
+# Installer for HoekWindLEDMatrix extension
 
 from weecfg.extension import ExtensionInstaller
 
 
 def loader():
-    return WindGuruInstaller()
+    return HoekWindLEDMatrixInstaller()
 
 
-class WindGuruInstaller(ExtensionInstaller):
+class HoekWindLEDMatrixInstaller(ExtensionInstaller):
     def __init__(self):
-        super(WindGuruInstaller, self).__init__(
-            version="0.2",
-            name='windguru',
-            description='Upload weather data to WindGuru.',
-            restful_services='user.windguru.WindGuru',
+        super(HoekWindLEDMatrixInstaller, self).__init__(
+            version="0.1",
+            name='hoekwindledmatrix',
+            description='Display wind speed on an LED Matrix.',
+            report_services='user.hoekwind.HoekWindLEDMatrix',
             config={
-                'StdRESTful': {
-                    'WindGuru': {
-                        'station_id': 'replace_me',
-                        'password': 'replace_me'}}},
-            files=[('bin/user', ['bin/user/windguru.py'])]
+                'HoekWindLEDMatrix': {}
+            files=[('bin/user', ['bin/user/hoekwindledmatrix.py'])]
         )
