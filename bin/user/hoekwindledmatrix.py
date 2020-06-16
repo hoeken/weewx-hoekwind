@@ -20,6 +20,7 @@ except ImportError:
 import re
 import sys
 import time
+import os
 
 import weewx
 import weewx.units
@@ -83,37 +84,40 @@ LED_CHANNEL = 0	   # set to '1' for GPIOs 13, 19, 41, 45 or 53
 class HoekWindLEDMatrix(weewx.engine.StdPrint):
 
 	def __init__(self, engine, config_dict):
-		loginf("hoekwind init")
-		
+		logdbg("hoekwind init")
+
 		# Create NeoPixel object with appropriate configuration.
 		self.strip = PixelStrip(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL)
 		# Intialize the library (must be called once before other functions).
 		self.strip.begin()
-		
+
 		super(HoekWindLEDMatrix, self).__init__(engine, config_dict)
 
 	# Override the default new_loop_packet member function:
 	def new_loop_packet(self, event):
 		packet = event.packet
-		windSpeed = _mps_to_knot(packet.get('windSpeed', 'N/A'))
-		outputString = f"{windSpeed} kts"
-		loginf(outputString)
-		#self.displayText(outputString)
-		self.colorWipe(Color(255,0,0), 5)
-		
+		windSpeed = packet.get('windSpeed', 'N/A')
+		if windSpeed != 'N/A':
+			windSpeed = round(windSpeed)
+			outputString = f"{windSpeed} kts"
+			logdbg(outputString)
+			self.displayText(outputString)
+			#red = Color(255,0,0)
+			#self.colorWipe(red, 5)
+
 	# Define functions which animate LEDs in various ways.
-	def colorWipe(color, wait_ms=50):
+	def colorWipe(self, color, wait_ms=50):
 		"""Wipe color across display a pixel at a time."""
 		for i in range(self.strip.numPixels()):
 			self.strip.setPixelColor(i, color)
 			self.strip.show()
 			time.sleep(wait_ms / 1000.0)
 
-	def matrix_to_array(matrix):
+	def matrix_to_array(self, matrix):
 		arr = []
 		rows = len(matrix)
 		cols = len(matrix[0])
-		
+
 		for r in range(rows):
 			for c in range(cols):
 				if r % 2 == 1:
@@ -123,20 +127,20 @@ class HoekWindLEDMatrix(weewx.engine.StdPrint):
 
 		return arr
 
-	def displayMatrix(matrix):
-		arr = matrix_to_array(matrix)
+	def displayMatrix(self, matrix):
+		arr = self.matrix_to_array(matrix)
 		for i in range(len(arr)):
 			self.strip.setPixelColor(i, arr[i])
 
 		self.strip.show()
 
-	def displayImage(im):
+	def displayImage(self, im):
 
 		rgb_im = im.convert('RGB')
 		pix = rgb_im.load()
 
 		#print(im.size)
-		
+
 		matrix = []
 		for y in range(LED_ROWS):
 			row = []
@@ -144,26 +148,24 @@ class HoekWindLEDMatrix(weewx.engine.StdPrint):
 				r, g, b = pix[x,y]
 				row.append(Color(r,g,b))
 			matrix.append(row)
-		
-		displayMatrix(matrix)
+		self.displayMatrix(matrix)
 
-	def displayText(text):
+	def displayText(self, text):
+		base_path = os.path.dirname(os.path.realpath(__file__))
 		base = Image.new("RGBA", (44, 11))
 		txt = Image.new("RGBA", (44, 11))
-		fnt = ImageFont.load('cherry-13-b.pil')
+		fnt = ImageFont.load("/home/pi/hoeken/cherry-13-b.pil")
 		d = ImageDraw.Draw(txt)
-		
+
 		kts = random.randint(10, 25)
-		
+
 		d.text((0,-1), text, font=fnt, fill=(255,255,255,255))
 		im = Image.alpha_composite(base, txt)
-		
-		displayImage(im);
+
+		self.displayImage(im);
 
 
-	def clear():
+	def clear(self):
 		for i in range(self.strip.numPixels()):
 			self.strip.setPixelColor(i, Color(0,0,0))
 		self.strip.show()
-			
-			
