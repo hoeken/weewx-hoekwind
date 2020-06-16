@@ -69,9 +69,15 @@ def _mps_to_knot(v):
 
 class HoekWindLEDMatrix(weewx.engine.StdPrint):
 
+	def __init__(self, engine, config_dict):
+		logmsg("hoekwind init")
+		super(HoekWindLEDMatrix, self).__init__(engine, config_dict)
+
 	# Override the default new_loop_packet member function:
 	def new_loop_packet(self, event):
 		packet = event.packet
 		windSpeed = packet.get('windSpeed', 'N/A')
 		outputString = f"HoekWind={windSpeed}"
 		print(outputString)
+		logmsg(outputString)
+		
