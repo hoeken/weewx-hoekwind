@@ -27,7 +27,7 @@ import weewx.units
 from weeutil.weeutil import timestamp_to_string
 
 from rpi_ws281x import PixelStrip, Color
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ImageColor
 import random
 import time
 
@@ -174,10 +174,16 @@ windSpeedColors = {
 	50 : "7935FF"
 }
 
-def hex_to_rgb(value):
-	value = value.lstrip('#')
-	lv = len(value)
-	return tuple(int(value[i:i+lv//3], 16) for i in range(0, lv, lv//3))
+def wheel(pos):
+	"""Generate rainbow colors across 0-255 positions."""
+	if pos < 85:
+		return (pos * 3, 255 - pos * 3, 0)
+	elif pos < 170:
+		pos -= 85
+		return (255 - pos * 3, 0, pos * 3)
+	else:
+		pos -= 170
+		return (0, pos * 3, 255 - pos * 3)
 
 class HoekWindLEDMatrix(weewx.engine.StdPrint):
 
@@ -189,11 +195,33 @@ class HoekWindLEDMatrix(weewx.engine.StdPrint):
 		# Intialize the library (must be called once before other functions).
 		self.strip.begin()
 
-		self.displayText("SendIt")
+		self.windSpeeds = []
+
+		#show a little into text
+		for j in range(256):
+			color = wheel(j & 255)
+			self.displayText("SendIt", color)
+
+#		red = (255, 0, 0)
+#		green = (0, 255, 0)
+#		blue = (0, 0, 255)
+
+#		self.displayText('red', red)
+#		time.sleep(1)
+#		self.displayText('green', green)
+#		time.sleep(1)
+#		self.displayText('blue', blue)
+#		time.sleep(1)
+
 
 #		for windSpeed in range(1, 50):
 #			self.displayWindSpeed(windSpeed, 123)
-#			time.sleep(0.5)
+#			time.sleep(0.25)
+#		for windAngle in range(0, 359, 15):
+#			self.displayWindSpeed(15, windAngle)
+#			time.sleep(0.25)
+
+		self.clear()
 
 		super(HoekWindLEDMatrix, self).__init__(engine, config_dict)
 
@@ -204,29 +232,43 @@ class HoekWindLEDMatrix(weewx.engine.StdPrint):
 		if windSpeed != 'N/A':
 			windSpeed = round(windSpeed)
 			windDir = packet.get('windDir', 'N/A')
-			self.displayWindSpeed(windSpeed, windDir)
+
+			self.windSpeeds.insert(0, windSpeed)
+			while len(self.windSpeeds) > 44:
+				self.windSpeeds.pop()
+			windSpeedAvg = round(sum(self.windSpeeds) / len(self.windSpeeds))
+			#loginf(windSpeed)
+			#loginf(self.windSpeeds)
+			#loginf(windSpeedAvg)
+
+			self.displayWindSpeed(windSpeedAvg, windDir)
+
+			#show a history of our speeds....
+			i = 43
+			for speed in self.windSpeeds:
+				self.strip.setPixelColor(44*10+i, Color(*self.getWindSpeedColor(speed)))
+				i=i-1
+			self.strip.show()
 
 	def displayWindSpeed(self, windSpeed, windDir):
-		windSpeedColorHex = self.getWindSpeedColor(windSpeed)
-		rgb = hex_to_rgb(windSpeedColorHex)
-		windSpeedColor = Color(rgb[0], rgb[1], rgb[2])
+		color = self.getWindSpeedColor(windSpeed)
 
 		cardinal = self.getCardinal(windDir)
-		loginf(f"{windDir} {cardinal} #{windSpeedColorHex}")
 
-		outputString = f"{windSpeed:2.0f} {cardinal}"
-		loginf(outputString)
-		self.displayText(outputString, windSpeedColor)
-		#red = Color(255,0,0)
-		#self.colorWipe(red, 5)
+		base_path = os.path.dirname(os.path.realpath(__file__))
+		big = ImageFont.load("/home/pi/hoeken/cherry-13-b.pil")
+		kts = ImageFont.load("/home/pi/hoeken/cherry-10-r.pil")
+		small = ImageFont.load("/home/pi/hoeken/cherry-10-b.pil")
+		img = Image.new("RGB", (44, 11))
 
-	# Define functions which animate LEDs in various ways.
-	def colorWipe(self, color, wait_ms=50):
-		"""Wipe color across display a pixel at a time."""
-		for i in range(self.strip.numPixels()):
-			self.strip.setPixelColor(i, color)
-			self.strip.show()
-			time.sleep(wait_ms / 1000.0)
+		d = ImageDraw.Draw(img)
+		d.text((-1,-2), f"{windSpeed:2.0f}", font=big, fill=color)
+		d.text((13, 1), f"kt", font=kts, fill=color)
+		d.text((26, 1), f"{cardinal}", font=small, fill=color)
+
+		img.save(f"/home/pi/hoeken/images/{windSpeed}-{cardinal}.png")
+
+		self.displayImage(img);
 
 	def matrix_to_array(self, matrix):
 		arr = []
@@ -254,8 +296,6 @@ class HoekWindLEDMatrix(weewx.engine.StdPrint):
 		rgb_im = im.convert('RGB')
 		pix = rgb_im.load()
 
-		#print(im.size)
-
 		matrix = []
 		for y in range(LED_ROWS):
 			row = []
@@ -265,13 +305,15 @@ class HoekWindLEDMatrix(weewx.engine.StdPrint):
 			matrix.append(row)
 		self.displayMatrix(matrix)
 
-	def displayText(self, text, color=Color(255,255,255)):
+	def displayText(self, text, color=(255,255,255)):
 		base_path = os.path.dirname(os.path.realpath(__file__))
 		fnt = ImageFont.load("/home/pi/hoeken/cherry-13-b.pil")
 
-		txt = Image.new("RGBA", (44, 11))
+		txt = Image.new("RGB", (44, 11))
 		d = ImageDraw.Draw(txt)
 		d.text((-1,-1), text, font=fnt, fill=color)
+
+		txt.save(f"/home/pi/hoeken/images/{text}.png")
 
 		self.displayImage(txt);
 
@@ -293,8 +335,29 @@ class HoekWindLEDMatrix(weewx.engine.StdPrint):
 		return '?'
 
 	def getWindSpeedColor(self, val):
-		val = round(val)
-		val = max(0, val)
-		val = min(50, val)
+#		val = round(val)
+#		val = max(0, val)
+#		val = min(50, val)
 
-		return windSpeedColors[val]
+#		return ImageColor.getrgb(f"#{windSpeedColors[val]}")
+
+		if val < 5:
+			hex = "#808080"
+		elif val < 10:
+			hex = "#00ffff"
+		elif val < 15:
+			hex = "#ffff00"
+		elif val < 20:
+			hex = "#00ff00"
+		elif val < 25:
+			hex = "#ff8000"
+		elif val < 30:
+			hex = "#ff0000"
+		elif val < 35:
+			hex = "#ff007f"
+		elif val < 40:
+			hex = "#ff00ff"
+		else:
+			hex = "#0000ff"
+#
+		return ImageColor.getrgb(hex)
